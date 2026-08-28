@@ -183,36 +183,49 @@ def import_csv(
     currency: Currency,
     csv_text: str,
 ) -> CsvImportResult:
-    reader = csv.DictReader(io.StringIO(csv_text))
-    if reader.fieldnames is None:
-        raise ValueError("CSV file has no header row.")
+    lines = csv_text.strip().splitlines()
+    if not lines:
+        raise ValueError("CSV file is empty.")
 
-    # Normalise all header keys to lowercase-stripped for matching
-    raw_headers = [h.strip().lower() for h in reader.fieldnames if h]
+    # 1. Scan for the header row by looking for known column aliases
+    header_row_index = -1
+    raw_headers = []
+    
+    # We'll look for a row that has an amount column
+    amount_alias_set = set(AMOUNT_ALIASES + DEBIT_ALIASES + CREDIT_ALIASES)
+    
+    csv_reader = csv.reader(lines)
+    all_rows = list(csv_reader)
+    
+    for idx, row in enumerate(all_rows):
+        normalized_row = [(col or "").strip().lower() for col in row]
+        if any(h in normalized_row for h in amount_alias_set):
+            header_row_index = idx
+            raw_headers = normalized_row
+            break
 
-    # Pre-check: we need at least ONE amount-like column
-    has_amount = any(
-        h in raw_headers for h in (
-            AMOUNT_ALIASES + DEBIT_ALIASES + CREDIT_ALIASES
-        )
-    )
-    if not has_amount:
+    if header_row_index == -1:
+        # Fallback for error reporting: show the first non-empty row they sent
+        first_row = [c for c in all_rows[0]] if all_rows else []
         raise ValueError(
-            f"CSV is missing required column(s): no amount column found. "
+            f"CSV is missing required column(s): no amount column found in any row. "
             f"Accepted amount column names: {AMOUNT_ALIASES[:6]}... "
-            f"Found columns: {raw_headers}"
+            f"Found first row columns: {first_row}"
         )
 
+    # Now we have the headers, process the remaining rows
     existing_events = list_ledger(session, user_id)
     rows: list[CsvRowResult] = []
     now = datetime.now(timezone.utc)
 
-    for row_number, raw_row in enumerate(reader, start=2):
-        # Normalise row keys to lowercase-stripped
-        row: dict[str, str] = {
-            (k or "").strip().lower(): (v or "").strip()
-            for k, v in raw_row.items()
-        }
+    # Process rows after the header
+    for row_offset, raw_values in enumerate(all_rows[header_row_index + 1:], start=1):
+        row_number = header_row_index + 1 + row_offset
+        # Map values to the discovered headers
+        row: dict[str, str] = {}
+        for i, h in enumerate(raw_headers):
+            if h:  # skip empty headers
+                row[h] = raw_values[i].strip() if i < len(raw_values) else ""
 
         try:
             # --- Date ---
