@@ -54,13 +54,17 @@ app = FastAPI(
 # Falls back to "*" (any origin) if unset, which is fine for a hackathon demo
 # but should be tightened before anything resembling production use.
 _cors_origins_env = os.environ.get("ASTRAFLOW_CORS_ORIGINS", "").strip()
-_allow_origins = [o.strip() for o in _cors_origins_env.split(",") if o.strip()] or ["*"]
+_allow_origins = [o.strip() for o in _cors_origins_env.split(",") if o.strip()]
+if not _allow_origins:
+    _allow_origins = [
+        "https://astra-flow-2-0.vercel.app",
+        "http://localhost:5173",
+        "http://localhost:3000"
+    ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://astra-flow-2-0.vercel.app"
-    ],
+    allow_origins=_allow_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
