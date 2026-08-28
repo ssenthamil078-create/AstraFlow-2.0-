@@ -1,0 +1,31 @@
+# Phase 1 — product definition & safety boundaries
+# Phase 2 — canonical financial data model (adds SQLAlchemy for the event ledger)
+# Phase 3 — ingestion & truth layer (adds FastAPI, multipart uploads, and
+#           the local Tesseract OCR pipeline)
+#
+# Compatible with Python 3.9+ (no PEP 604 `X | Y` union syntax used at
+# runtime-evaluated points, since Pydantic eagerly resolves type hints).
+#
+# System dependency (not pip-installable): the `tesseract` binary must be
+# on PATH for OCR — e.g. `apt-get install tesseract-ocr`. PDF receipts
+# additionally need poppler (`apt-get install poppler-utils`) for
+# pdf2image's page rasterization.
+
+pydantic==2.9.2
+pytest==8.3.3
+SQLAlchemy==2.0.35
+fastapi==0.115.0
+uvicorn[standard]==0.31.0
+python-multipart==0.0.12
+httpx==0.27.2          # test client for the API tests
+pytesseract==0.3.13
+Pillow==10.4.0
+pdf2image==1.17.0      # optional: only needed if a document upload is a PDF
+
+# Phase 6 — authentication (JWT access tokens + email verification)
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.0.1          # pinned: passlib 1.7.4 breaks on bcrypt>=4.1's API change
+email-validator==2.2.0 # required by pydantic's EmailStr
+
+python-dotenv==1.0.1      # loads .env file for local dev
