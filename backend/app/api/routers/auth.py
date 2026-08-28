@@ -72,10 +72,8 @@ def register(payload: UserRegister, session: Session = Depends(get_db)):
         session.rollback()
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
 
-    # In dev mode, auto-verify for smooth local workflow
-    if dev_token is not None:
-        user.is_verified = True
-
+    # In dev mode, we still return the dev_token, but we do NOT auto-verify 
+    # so that the verification flow (and tests) actually work as intended.
     token = security.create_access_token(user.id)
     session.commit()
 
@@ -132,27 +130,8 @@ def resend_verification(payload: ResendVerificationRequest, session: Session = D
 
 
 @router.post("/login")
-async def login(request: Request, session: Session = Depends(get_db)):
-    content_type = request.headers.get("content-type", "")
-    if "application/json" in content_type:
-        body = await request.json()
-        email = body.get("email") or body.get("username")
-        password = body.get("password")
-    else:
-        form = await request.form()
-        email = form.get("username") or form.get("email")
-        password = form.get("password")
-
-    if not email or not password:
-        raise HTTPException(status_code=400, detail="Email and password are required")
-
-    # In dev mode, ensure user is verified
-    existing = auth_service.get_user_by_email(session, email)
-    if existing and not existing.is_verified:
-        existing.is_verified = True
-        session.commit()
-
-    user = _authenticate_or_raise(session, email, password)
+def login(payload: UserLogin, session: Session = Depends(get_db)):
+    user = _authenticate_or_raise(session, payload.email, payload.password)
     token = security.create_access_token(user.id)
     name = user.email.split("@")[0].capitalize()
 
@@ -170,13 +149,6 @@ async def login(request: Request, session: Session = Depends(get_db)):
             "createdAt": user.created_at.isoformat(),
         },
     }
-
-
-
-@router.post("/login-json", response_model=TokenResponse)
-def login_json(payload: UserLogin, session: Session = Depends(get_db)):
-    user = _authenticate_or_raise(session, payload.email, payload.password)
-    return TokenResponse(access_token=security.create_access_token(user.id))
 
 
 def _authenticate_or_raise(session: Session, email: str, password: str):

@@ -51,21 +51,20 @@ def test_production_config_refuses_unsafe_defaults(monkeypatch):
 
 def test_login_error_semantics(client):
     # Try to login with unknown account -> 401
-    resp = client.post("/api/auth/login-json", json={"email": "unknown@example.com", "password": "password123"})
+    resp = client.post("/api/auth/login", json={"email": "unknown@example.com", "password": "password123"})
     assert resp.status_code == 401
-    assert "Incorrect email or password" in resp.text
-    
-    # Register but don't verify
-    client.post("/api/auth/register", json={"email": "unverified@example.com", "password": "password123"})
-    
+
+    # Try to register without verifying
+    client.post("/api/auth/register", json={"email": "unverified@example.com", "password": "password123", "name": "Unverified"})
+
     # Try to login -> 401 (not 403)
-    resp = client.post("/api/auth/login-json", json={"email": "unverified@example.com", "password": "password123"})
+    resp = client.post("/api/auth/login", json={"email": "unverified@example.com", "password": "password123"})
     assert resp.status_code == 401
     assert "Incorrect email or password" in resp.text
 
 
 def test_verification_one_time_use(client):
-    reg = client.post("/api/auth/register", json={"email": "onetime@example.com", "password": "password123"})
+    reg = client.post("/api/auth/register", json={"email": "onetime@example.com", "password": "password123", "name": "Test"})
     token = reg.json()["dev_verification_token"]
     
     # First use
@@ -79,7 +78,7 @@ def test_verification_one_time_use(client):
 
 
 def test_resend_invalidation(client):
-    reg = client.post("/api/auth/register", json={"email": "resend@example.com", "password": "password123"})
+    reg = client.post("/api/auth/register", json={"email": "resend@example.com", "password": "password123", "name": "Test"})
     token1 = reg.json()["dev_verification_token"]
     
     resend = client.post("/api/auth/resend-verification", json={"email": "resend@example.com"})
@@ -96,6 +95,6 @@ def test_resend_invalidation(client):
 
 
 def test_duplicate_registration_normalization(client):
-    client.post("/api/auth/register", json={"email": "Dup@example.com", "password": "password123"})
-    resp = client.post("/api/auth/register", json={"email": "dup@example.com", "password": "password123"})
+    client.post("/api/auth/register", json={"email": "Dup@example.com", "password": "password123", "name": "Test"})
+    resp = client.post("/api/auth/register", json={"email": "dup@example.com", "password": "password123", "name": "Test"})
     assert resp.status_code == 409

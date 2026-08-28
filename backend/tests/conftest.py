@@ -43,7 +43,7 @@ def register_and_login(client, email: str = "test@example.com", password: str = 
     no real SMTP backend exists), logs in, and returns the
     `{"Authorization": "Bearer ..."}` header dict every protected
     endpoint now requires."""
-    register_response = client.post("/api/auth/register", json={"email": email, "password": password})
+    register_response = client.post("/api/auth/register", json={"email": email, "password": password, "name": "Test"})
     assert register_response.status_code == 201, register_response.text
     token = register_response.json()["dev_verification_token"]
     assert token, "ASTRAFLOW_EXPOSE_VERIFICATION_TOKEN must be enabled for this test helper to work"
@@ -51,7 +51,7 @@ def register_and_login(client, email: str = "test@example.com", password: str = 
     verify_response = client.post("/api/auth/verify-email", json={"token": token})
     assert verify_response.status_code == 200, verify_response.text
 
-    login_response = client.post("/api/auth/login-json", json={"email": email, "password": password})
+    login_response = client.post("/api/auth/login", json={"email": email, "password": password})
     assert login_response.status_code == 200, login_response.text
 
     access_token = login_response.json()["access_token"]
