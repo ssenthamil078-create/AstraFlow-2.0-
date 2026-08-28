@@ -41,7 +41,7 @@ DESCRIPTION_ALIASES = [
     "description", "narration", "remarks", "particulars", "details",
     "transaction details", "transaction description", "memo", "note",
     "payee", "merchant", "beneficiary", "transaction remarks", "txn remarks",
-    "transaction narration",
+    "transaction narration", "accounts", "activity", "source/destination",
 ]
 
 DATE_ALIASES = [
@@ -57,7 +57,7 @@ TYPE_ALIASES = [
 REFERENCE_ALIASES = [
     "reference", "ref no", "chq/ref no.", "chq no", "cheque no",
     "transaction id", "txn id", "utr no", "utr", "reference number",
-    "ref number", "ref", "transaction ref",
+    "ref number", "ref", "transaction ref", "wallet txn id",
 ]
 
 CATEGORY_ALIASES = ["category", "sub-category", "transaction category", "tag"]
@@ -66,6 +66,9 @@ BALANCE_ALIASES = [
     "balance", "closing balance", "available balance", "running balance",
     "balance (inr)", "bal",
 ]
+
+DEBIT_ALIASES = ["debit amount", "withdrawal amt (inr)", "withdrawal", "debit", "dr", "money paid (amount in rs.)", "money paid"]
+CREDIT_ALIASES = ["credit amount", "deposit amt (inr)", "deposit", "credit", "cr", "money received (amount in rs.)", "money received"]
 
 CSV_BASE_CONFIDENCE = Decimal("0.90")
 CSV_DUPLICATE_CONFIDENCE = Decimal("0.40")
@@ -141,8 +144,8 @@ def _parse_direction(row: dict, signed_amount: Decimal) -> tuple[EventDirection,
         return EventDirection.DEBIT, abs(signed_amount)
 
     # 2. Separate debit/credit columns (common in HDFC/SBI exports)
-    debit_raw = _find_col(row, ["debit amount", "withdrawal amt (inr)", "withdrawal", "debit", "dr"])
-    credit_raw = _find_col(row, ["credit amount", "deposit amt (inr)", "deposit", "credit", "cr"])
+    debit_raw = _find_col(row, DEBIT_ALIASES)
+    credit_raw = _find_col(row, CREDIT_ALIASES)
     if debit_raw and debit_raw.strip().replace(",", "").replace("₹", "").strip():
         try:
             val = _parse_amount(debit_raw)
@@ -187,20 +190,12 @@ def import_csv(
     # Normalise all header keys to lowercase-stripped for matching
     raw_headers = [h.strip().lower() for h in reader.fieldnames if h]
 
-    # Pre-check: we need at least ONE date column and ONE amount-like column
-    has_date = any(h in raw_headers for alias_list in [DATE_ALIASES] for h in alias_list)
+    # Pre-check: we need at least ONE amount-like column
     has_amount = any(
         h in raw_headers for h in (
-            AMOUNT_ALIASES
-            + ["debit amount", "credit amount", "withdrawal amt (inr)", "deposit amt (inr)", "debit", "credit"]
+            AMOUNT_ALIASES + DEBIT_ALIASES + CREDIT_ALIASES
         )
     )
-    if not has_date:
-        raise ValueError(
-            f"CSV is missing required column(s): no date column found. "
-            f"Accepted date column names: {DATE_ALIASES[:6]}... "
-            f"Found columns: {raw_headers}"
-        )
     if not has_amount:
         raise ValueError(
             f"CSV is missing required column(s): no amount column found. "
@@ -222,9 +217,10 @@ def import_csv(
         try:
             # --- Date ---
             date_raw = _find_col(row, DATE_ALIASES)
-            if not date_raw:
-                raise ValueError("No date value found in this row")
-            event_date = _parse_date(date_raw)
+            if date_raw:
+                event_date = _parse_date(date_raw)
+            else:
+                event_date = now
 
             # --- Amount ---
             # Try unified amount column first, then split debit/credit columns
@@ -233,8 +229,8 @@ def import_csv(
                 signed_amount = _parse_amount(amount_raw)
             else:
                 # Try to build from split columns
-                debit_raw = _find_col(row, ["debit amount", "withdrawal amt (inr)", "withdrawal", "debit", "dr"])
-                credit_raw = _find_col(row, ["credit amount", "deposit amt (inr)", "deposit", "credit", "cr"])
+                debit_raw = _find_col(row, DEBIT_ALIASES)
+                credit_raw = _find_col(row, CREDIT_ALIASES)
                 if debit_raw and debit_raw.strip().replace(",", "").replace("₹", "").strip():
                     signed_amount = -abs(_parse_amount(debit_raw))
                 elif credit_raw and credit_raw.strip().replace(",", "").replace("₹", "").strip():
