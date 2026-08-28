@@ -1,21 +1,6 @@
 import { IngestionBatchResult, FinancialEvent } from '../types.ts';
+import { apiFetch } from './api.ts';
 
-const API_BASE = '/api';
-
-function authHeaders(): HeadersInit {
-  const token = localStorage.getItem('astra_token');
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
-
-async function fetchJson<T>(url: string, options: RequestInit): Promise<T> {
-  const res = await fetch(url, options);
-  if (!res.ok) {
-    let detail = `HTTP ${res.status}`;
-    try { const j = await res.json(); detail = j.detail || JSON.stringify(j); } catch {}
-    throw new Error(detail);
-  }
-  return res.json();
-}
 
 function normalizeIngestionResult(res: any, type: string): IngestionBatchResult {
   const rows = res.rows || res.events || [];
@@ -64,9 +49,8 @@ export const ingestionApi = {
   /** Upload a CSV bank statement file */
   importCsvFile: async (file: File): Promise<IngestionBatchResult> => {
     const text = await file.text();
-    const res = await fetchJson<any>(`${API_BASE}/import/csv`, {
+    const res = await apiFetch<any>('/api/import/csv', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify({ csvContent: text, fileName: file.name }),
     });
     return normalizeIngestionResult(res, 'CSV Import');
@@ -76,9 +60,8 @@ export const ingestionApi = {
   importSmsFile: async (file: File): Promise<IngestionBatchResult> => {
     const text = await file.text();
     const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
-    const res = await fetchJson<any>(`${API_BASE}/inputs/sms`, {
+    const res = await apiFetch<any>('/api/inputs/sms', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify({ messages: lines }),
     });
     return normalizeIngestionResult(res, 'SMS Import');
@@ -89,9 +72,8 @@ export const ingestionApi = {
     const form = new FormData();
     form.append('file', file);
     form.append('fileName', file.name);
-    const res = await fetchJson<any>(`${API_BASE}/documents/upload`, {
+    const res = await apiFetch<any>('/api/documents/upload', {
       method: 'POST',
-      headers: { ...authHeaders() },
       body: form,
     });
     
