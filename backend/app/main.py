@@ -58,7 +58,9 @@ _allow_origins = [o.strip() for o in _cors_origins_env.split(",") if o.strip()] 
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_allow_origins,
+    allow_origins=[
+        "https://astra-flow-2-0.vercel.app"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
