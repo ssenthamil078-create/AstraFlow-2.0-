@@ -67,10 +67,11 @@ export const AstraCopilot: React.FC<AstraCopilotProps> = ({
       };
       setMessages((prev) => [...prev, assistantMsg]);
     } catch (err: any) {
+      const detail = err?.message || err?.toString() || 'Unknown error';
       const errorMsg: ChatMessage = {
         id: `ast_err_${Date.now()}`,
         role: 'assistant',
-        content: 'Astra intelligence synchronized locally. Please verify your connection or review the latest events in your universe.',
+        content: `⚠️ Could not reach the Astra backend. ${detail.includes('Failed to fetch') ? 'This is likely a network or CORS issue — please ensure the backend is running and the API proxy is configured correctly.' : detail}`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       setMessages((prev) => [...prev, errorMsg]);
