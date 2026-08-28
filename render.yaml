@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: astraflow-api
+    runtime: python
+    rootDir: backend
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: ASTRAFLOW_ENV
+        value: production
+      - key: ASTRAFLOW_EXPOSE_VERIFICATION_TOKEN
+        value: "false"
+      - key: ASTRAFLOW_SECRET_KEY
+        sync: false
+      - key: ASTRAFLOW_DATABASE_URL
+        sync: false
+      - key: ASTRAFLOW_CORS_ORIGINS
+        sync: false
+      - key: ASTRAFLOW_FRONTEND_BASE_URL
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
