@@ -2,12 +2,10 @@
  * Base API Client for AstraFlow
  */
 
-// In production (Vercel), the frontend and backend are on different domains,
-// so every request needs an absolute URL. Set VITE_API_BASE_URL in Vercel's
-// project settings to the Render backend's URL (e.g. https://astraflow-api.onrender.com).
-// Left empty, requests stay relative — which only works when something
-// (like the Vite dev proxy) sits in front of both on the same origin.
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+// In production (Vercel), we now use a proxy rewrite in vercel.json.
+// We force this to be empty so that fetch() always uses relative paths (e.g. /api/auth/login),
+// which allows the browser to treat it as same-origin, completely bypassing CORS.
+const API_BASE_URL = '';
 
 function resolveUrl(endpoint: string): string {
   if (/^https?:\/\//i.test(endpoint)) return endpoint;
