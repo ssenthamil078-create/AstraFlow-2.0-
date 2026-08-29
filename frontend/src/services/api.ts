@@ -59,6 +59,12 @@ export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): 
   }
 
   if (endpoint.includes('/api/events')) {
+    if (endpoint.includes('/confirm')) {
+      return { success: true, event: { status: 'CONFIRMED' } } as any;
+    }
+    if (endpoint.includes('/reject')) {
+      return { success: true, event: { status: 'REJECTED' } } as any;
+    }
     return { events: mockEvents } as any;
   }
 
@@ -89,7 +95,36 @@ export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): 
   }
 
   if (endpoint.includes('/api/income-sources')) {
-    return mockIncomeSources as any;
+    if (endpoint.includes('/recalculate')) {
+      const parts = endpoint.split('/');
+      const id = parts[parts.length - 2];
+      const source = mockIncomeSources.find((s) => s.id === id) || mockIncomeSources[0];
+      return { success: true, source: { ...source, reliability_score: Math.min(100, source.reliability_score + 5) } } as any;
+    }
+    if (endpoint.includes('/reliability')) {
+      const parts = endpoint.split('/');
+      const id = parts[parts.length - 2];
+      const source = mockIncomeSources.find((s) => s.id === id) || mockIncomeSources[0];
+      return { source, reliability_score: source.reliability_score, amount_consistency_score: source.amount_consistency_score, timeliness_score: source.timeliness_score, data_confidence_score: source.data_confidence_score, observation_count: source.observation_count } as any;
+    }
+    if (options.method === 'POST') {
+      let body: any = {};
+      try { body = JSON.parse(options.body as string); } catch {}
+      const newSource = {
+        id: `src-${Date.now()}`,
+        name: body.name || 'New Income Stream',
+        category: body.category || 'other',
+        typical_amount: String(body.typical_amount || 0),
+        reliability_score: 50.0,
+        observation_count: 1,
+        is_provisional: true,
+        amount_consistency_score: 50.0,
+        timeliness_score: 50.0,
+        data_confidence_score: 50.0,
+      };
+      return { source: newSource } as any;
+    }
+    return { incomeSources: mockIncomeSources } as any;
   }
 
   if (endpoint.includes('/api/chat')) {

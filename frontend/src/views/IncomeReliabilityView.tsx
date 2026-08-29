@@ -18,12 +18,16 @@ import { incomeApi, ReliabilityDetails } from '../services/incomeApi.ts';
 interface IncomeReliabilityViewProps {
   incomeSources: IncomeSource[];
   onRefreshSources: () => void;
+  onCreateSource?: (source: IncomeSource) => void;
+  onUpdateSource?: (source: IncomeSource) => void;
   currency?: string;
 }
 
 export const IncomeReliabilityView: React.FC<IncomeReliabilityViewProps> = ({
   incomeSources,
   onRefreshSources,
+  onCreateSource,
+  onUpdateSource,
   currency = '₹',
 }) => {
   const [selectedSourceId, setSelectedSourceId] = useState<string | null>(null);
@@ -55,8 +59,12 @@ export const IncomeReliabilityView: React.FC<IncomeReliabilityViewProps> = ({
   const handleRecalculate = async (id: string) => {
     setRecalculatingId(id);
     try {
-      await incomeApi.recalculateReliability(id);
-      onRefreshSources();
+      const { source } = await incomeApi.recalculateReliability(id);
+      if (onUpdateSource) {
+        onUpdateSource(source);
+      } else {
+        onRefreshSources();
+      }
       if (selectedSourceId === id) {
         handleInspect(id);
       }
@@ -72,7 +80,7 @@ export const IncomeReliabilityView: React.FC<IncomeReliabilityViewProps> = ({
     if (!newName || !newAmount) return;
     setCreating(true);
     try {
-      await incomeApi.createIncomeSource({
+      const { source } = await incomeApi.createIncomeSource({
         name: newName,
         category: newCategory,
         typicalAmount: Number(newAmount),
@@ -80,7 +88,11 @@ export const IncomeReliabilityView: React.FC<IncomeReliabilityViewProps> = ({
       });
       setIsAddOpen(false);
       setNewName('');
-      onRefreshSources();
+      if (onCreateSource) {
+        onCreateSource(source);
+      } else {
+        onRefreshSources();
+      }
     } catch (err) {
       console.error(err);
     } finally {

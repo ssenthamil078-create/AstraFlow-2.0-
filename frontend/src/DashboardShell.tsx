@@ -112,13 +112,10 @@ export default function App() {
   const handleConfirmEvent = async (id: string) => {
     try {
       await eventsApi.confirmEvent(id);
-      // Refresh events and state
-      const [eventsRes, stateRes] = await Promise.all([
-        eventsApi.getEvents(),
-        financialStateApi.getState(),
-      ]);
-      if (eventsRes?.events) setEvents(eventsRes.events);
-      if (stateRes) setFinancialState(stateRes);
+      // Update local state directly
+      setEvents((prev) =>
+        prev.map((evt) => (evt.id === id ? { ...evt, status: 'CONFIRMED' as const } : evt))
+      );
     } catch (err: any) {
       console.error(err);
     }
@@ -127,12 +124,10 @@ export default function App() {
   const handleRejectEvent = async (id: string) => {
     try {
       await eventsApi.rejectEvent(id);
-      const [eventsRes, stateRes] = await Promise.all([
-        eventsApi.getEvents(),
-        financialStateApi.getState(),
-      ]);
-      if (eventsRes?.events) setEvents(eventsRes.events);
-      if (stateRes) setFinancialState(stateRes);
+      // Update local state directly
+      setEvents((prev) =>
+        prev.map((evt) => (evt.id === id ? { ...evt, status: 'REJECTED' as const } : evt))
+      );
     } catch (err: any) {
       console.error(err);
     }
@@ -332,6 +327,12 @@ export default function App() {
           <IncomeReliabilityView
             incomeSources={incomeSources}
             onRefreshSources={loadAllData}
+            onCreateSource={(newSource) => setIncomeSources((prev) => [newSource, ...prev])}
+            onUpdateSource={(updatedSource) =>
+              setIncomeSources((prev) =>
+                prev.map((src) => (src.id === updatedSource.id ? updatedSource : src))
+              )
+            }
             currency={currency}
           />
         )}
