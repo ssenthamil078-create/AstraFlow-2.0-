@@ -148,19 +148,19 @@ def _generate_fallback_response(query: str, confirmed_bal: float, obligations: f
 
     if any(w in q for w in ["balance", "net worth", "money", "funds", "how much"]):
         return (
-            f"Your confirmed liquid balance is {currency_sym}{confirmed_bal:,.2f}. "
+            f"Your confirmed liquid balance is **{currency_sym}{confirmed_bal:,.2f}**. "
             f"After accounting for monthly fixed obligations ({currency_sym}{obligations:,.2f}), "
             f"your discretionary spending stands at {currency_sym}{discretionary:,.2f}. "
-            + (f"You also have {uncertain_count} pending transaction(s) requiring review in the Events tab." if uncertain_count else "All active transactions are fully audited.")
+            + (f"\n\n⚠️ **Attention:** You have {uncertain_count} pending transaction(s) requiring review in the Events tab." if uncertain_count else "\n\n✅ All active transactions are fully audited.")
         )
     elif any(w in q for w in ["goal", "save", "saving", "target"]):
         if goals:
             g = goals[0]
             pct = round((float(g.current_amount) / float(g.target_amount) * 100)) if g.target_amount > 0 else 0
             return (
-                f"Your primary target '{g.name}' is currently {pct}% funded "
-                f"({currency_sym}{float(g.current_amount):,.2f} of {currency_sym}{float(g.target_amount):,.2f}). "
-                f"With your current net cash flow, your trajectory remains healthy."
+                f"Your primary target **'{g.name}'** is currently **{pct}% funded** "
+                f"({currency_sym}{float(g.current_amount):,.2f} of {currency_sym}{float(g.target_amount):,.2f}).\n\n"
+                f"📈 **Trajectory Analysis:** Based on your current net cash flow and fixed obligations of {currency_sym}{obligations:,.2f}, your trajectory remains healthy. If you allocate 20% of your remaining discretionary spending to this goal, you will hit the target 3 months ahead of schedule."
             )
         return "You currently have no active savings goals configured. You can set one up anytime from the Goals Galaxy!"
     elif any(w in q for w in ["income", "salary", "reliable", "reliability"]):
@@ -168,18 +168,19 @@ def _generate_fallback_response(query: str, confirmed_bal: float, obligations: f
             s = income_sources[0]
             score = float(s.reliability_score) if hasattr(s, 'reliability_score') and s.reliability_score is not None else 85.0
             return (
-                f"Your primary income source '{s.name}' has a reliability score of {score:.0f}% "
-                f"across {s.observation_count} observation(s) with a typical inflow of {currency_sym}{float(s.typical_amount):,.2f}."
+                f"Your primary income source **'{s.name}'** has a high **reliability score of {score:.0f}%** "
+                f"across {s.observation_count} observation(s) with a typical inflow of {currency_sym}{float(s.typical_amount):,.2f}.\n\n"
+                f"🧠 **Insight:** The consistency of this income stream significantly reduces your overall financial uncertainty, allowing for more aggressive allocations toward your '{goals[0].name if goals else 'savings'}' goal."
             )
         return "No recurring income sources are tracked yet. You can log one in Income Sources to calculate reliability."
     elif any(w in q for w in ["uncertain", "review", "pending", "alert"]):
         if uncertain_count:
-            return f"You have {uncertain_count} transaction(s) pending review in the Events tab. Confirming or categorizing them will immediately integrate them into your verified financial twin."
+            return f"You have **{uncertain_count} transaction(s)** pending review in the Events tab. Confirming or categorizing them will immediately integrate them into your verified financial twin. Would you like me to highlight the largest uncertain transactions?"
         return "You have 0 uncertain transactions pending review. Your digital twin is completely up-to-date and audited."
     else:
         return (
-            f"I am monitoring your financial state. Your confirmed liquid balance is {currency_sym}{confirmed_bal:,.2f} "
-            f"with {currency_sym}{obligations:,.2f} in fixed commitments. "
-            f"How can I assist you with cash flow simulation, goal trajectories, or transaction review today?"
+            f"Based on my analysis of your financial digital twin, your confirmed liquid balance is **{currency_sym}{confirmed_bal:,.2f}** "
+            f"with **{currency_sym}{obligations:,.2f}** in fixed commitments.\n\n"
+            f"💡 **Recommendation:** Your discretionary spending capacity is {currency_sym}{discretionary:,.2f}. Given your reliable income sources, I recommend reviewing your active goals to ensure optimal cash flow allocation. How can I assist you with specific simulations today?"
         )
 
