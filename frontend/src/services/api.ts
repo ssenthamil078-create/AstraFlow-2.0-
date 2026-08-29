@@ -63,6 +63,28 @@ export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): 
   }
 
   if (endpoint.includes('/api/goals')) {
+    // DELETE /api/goals/:id
+    if (options.method === 'DELETE') {
+      return { success: true, message: 'Goal retired from galaxy.' } as any;
+    }
+    // POST /api/goals — create new goal
+    if (options.method === 'POST') {
+      let body: any = {};
+      try { body = JSON.parse(options.body as string); } catch {}
+      const newGoal = {
+        id: `goal-${Date.now()}`,
+        name: body.name || 'New Goal',
+        target_amount: body.target_amount || '100000.00',
+        current_amount: body.current_amount || '0.00',
+        target_date: body.target_date || '2027-06-30T00:00:00Z',
+        linked_category: body.linked_category || 'Other',
+        priority: body.priority || 'MEDIUM',
+        color: body.color || '#b600f8',
+        created_at: new Date().toISOString(),
+      };
+      return { goal: newGoal } as any;
+    }
+    // GET /api/goals
     return mockGoals as any;
   }
 

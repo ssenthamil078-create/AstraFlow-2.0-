@@ -341,6 +341,7 @@ export default function App() {
             goals={goals}
             onOpenCreateGoal={() => setIsCreateGoalOpen(true)}
             onRefreshGoals={loadAllData}
+            onDeleteGoal={(id) => setGoals((prev) => prev.filter((g) => g.id !== id))}
             currency={currency}
           />
         )}
@@ -425,8 +426,9 @@ export default function App() {
       <CreateGoalModal
         isOpen={isCreateGoalOpen}
         onClose={() => setIsCreateGoalOpen(false)}
-        onGoalCreated={() => {
-          loadAllData();
+        onGoalCreated={(newGoal) => {
+          setGoals((prev) => [newGoal, ...prev]);
+          setIsCreateGoalOpen(false);
         }}
       />
     </div>

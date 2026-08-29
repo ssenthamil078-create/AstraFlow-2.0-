@@ -19,6 +19,7 @@ interface GoalsGalaxyViewProps {
   goals: FinancialGoal[];
   onOpenCreateGoal: () => void;
   onRefreshGoals: () => void;
+  onDeleteGoal?: (id: string) => void;
   currency?: string;
 }
 
@@ -26,6 +27,7 @@ export const GoalsGalaxyView: React.FC<GoalsGalaxyViewProps> = ({
   goals,
   onOpenCreateGoal,
   onRefreshGoals,
+  onDeleteGoal,
   currency = '₹',
 }) => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -35,7 +37,11 @@ export const GoalsGalaxyView: React.FC<GoalsGalaxyViewProps> = ({
     setDeletingId(id);
     try {
       await goalsApi.deleteGoal(id);
-      onRefreshGoals();
+      if (onDeleteGoal) {
+        onDeleteGoal(id);
+      } else {
+        onRefreshGoals();
+      }
     } catch (err) {
       console.error(err);
     } finally {
